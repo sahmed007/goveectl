@@ -36,9 +36,41 @@ int main(int argc, char** argv) {
     CLI::App* brightness_subcommand =
         app.add_subcommand("brightness", "Change a device's brightness");
 
-    int brightness_value;
-    brightness_subcommand->add_option("-c,--change", brightness_value,
-                                      "The brightness value to change to");
+    int brightness_value{0};
+
+    brightness_subcommand
+        ->add_option("value", brightness_value, "Brightness level")
+        ->required()
+        ->check(CLI::Range(0, 100));
+
+    brightness_subcommand
+        ->add_option("-d,--device", device_option, "Target device")
+        ->required();
+
+    CLI::App* color_subcommand =
+        app.add_subcommand("color", "Change a device's color");
+
+    int red = {0};
+    int green = {0};
+    int blue = {0};
+
+    color_subcommand->add_option("r", red, "Red channel")
+        ->required()
+        ->check(CLI::Range(0, 255));
+
+    color_subcommand->add_option("g", green, "Green channel")
+        ->required()
+        ->check(CLI::Range(0, 255));
+
+    color_subcommand->add_option("b", blue, "Blue channel")
+        ->required()
+        ->check(CLI::Range(0, 255));
+
+    color_subcommand
+        ->add_option("-d,--device", device_option, "The specified device")
+        ->required();
+
+    app.require_subcommand(1);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -53,9 +85,14 @@ int main(int argc, char** argv) {
     }
 
     if (brightness_subcommand->parsed()) {
-        std::cout << "Changing brightness to " << brightness_value << "\n";
+        std::cout << "Changing brightness of " << device_option << " to "
+                  << brightness_value << "%\n";
     }
 
-    std::cout << "goveectl is running\n";
+    if (color_subcommand->parsed()) {
+        std::cout << "Setting color to RGB(" << red << ", " << green << ", "
+                  << blue << ")\n";
+    }
+
     return 0;
 }
