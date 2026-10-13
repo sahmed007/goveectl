@@ -1,3 +1,15 @@
+# CMake build artifacts
 build/
+build-*/
+out/
+
+# Clang / editor caches
+.cache/
+.cache/
+
+# Local environment
 .env
+.env.*
+
+# macOS
 .DS_Store
