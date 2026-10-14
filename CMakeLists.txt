@@ -8,13 +8,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+find_package(CURL REQUIRED)
+
 add_executable(goveectl src/main.cpp)
+
+set_target_properties(goveectl PROPERTIES CMAKE_CXX_EXTENSIONS OFF)
 
 target_compile_features(goveectl PRIVATE cxx_std_20)
 
 target_include_directories(goveectl SYSTEM PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/external
 )
+
+target_link_libraries(goveectl PRIVATE CURL::libcurl)
 
 if(MSVC)
   target_compile_options(goveectl PRIVATE
