@@ -1,4 +1,7 @@
 #include "CLI11.hpp"
+#include "govee.hpp"
+#include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -74,8 +77,19 @@ int main(int argc, char** argv) {
 
     CLI11_PARSE(app, argc, argv);
 
+    const char* api_key = std::getenv("GOVEE_API_KEY");
+    if (api_key == nullptr || api_key[0] == '\0') {
+        std::cerr << "GOVEE_API_KEY is not set\n";
+        return 1;
+    }
+
     if (devices_subcommand->parsed()) {
-        std::cout << "Fetching devices...\n";
+        try {
+            std::cout << govee::list_devices(api_key) << '\n';
+        } catch (const std::exception& error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
     }
 
     if (on_subcommand->parsed()) {
