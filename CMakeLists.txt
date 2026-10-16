@@ -30,6 +30,7 @@ FetchContent_MakeAvailable(cpr)
 add_executable(goveectl
     src/main.cpp
     src/govee.cpp
+    src/cli.cpp
 )
 
 # Third-party headers (CLI11)
