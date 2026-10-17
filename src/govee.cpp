@@ -160,4 +160,16 @@ void set_color(const Device& device, int red, int green, int blue,
     send_control(device, capability, api_key);
 }
 
+void set_temperature(const Device& device, int kelvin,
+                     const std::string& api_key) {
+    if (kelvin <= 0) {
+        throw std::invalid_argument("Color temperature must be positive Kelvin");
+    }
+    const nlohmann::json capability = {
+        {"type", "devices.capabilities.color_setting"},
+        {"instance", "colorTemperatureK"},
+        {"value", kelvin}};
+    send_control(device, capability, api_key);
+}
+
 } // namespace govee

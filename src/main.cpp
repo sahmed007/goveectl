@@ -52,6 +52,9 @@ int main(int argc, char** argv) {
             commands::change_color(options.device, options.red, options.green,
                                    options.blue, api_key);
             break;
+        case Command::temperature:
+            commands::change_temperature(options.device, options.kelvin, api_key);
+            break;
         case Command::none:
             std::cerr << terminal::error("No command selected") << '\n';
             return 1;

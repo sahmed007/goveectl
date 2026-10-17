@@ -92,4 +92,15 @@ void change_color(const std::string& device_selector, int red, int green,
     std::cout << terminal::success("Success: ") << "Changed color to RGB("
               << red << ", " << green << ", " << blue << ")\n";
 }
+
+void change_temperature(const std::string& device_selector, int kelvin,
+                        const char* api_key) {
+    const auto device = find_device(device_selector);
+    govee::set_temperature(device, kelvin, api_key);
+    std::cout << terminal::success("Success: ")
+              << "Temperature request succeeded for "
+              << (device.name.empty() ? device.id : device.name) << ": "
+              << kelvin << " K\n";
+}
+
 } // namespace commands

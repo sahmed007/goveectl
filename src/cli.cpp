@@ -1,6 +1,7 @@
 #include "cli.hpp"
 #include "terminal.hpp"
 #include <charconv>
+#include <cctype>
 #include <memory>
 #include <sstream>
 #include <string_view>
@@ -8,6 +9,25 @@
 constexpr inline std::string_view GOVEECTL_VERSION = "0.1";
 
 namespace {
+int parse_temperature(std::string text) {
+    for (char& character : text) {
+        character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
+    }
+    if (text == "warm") return 2700;
+    if (text == "neutral") return 4000;
+    if (text == "cool") return 6500;
+
+    int kelvin = 0;
+    const auto result =
+        std::from_chars(text.data(), text.data() + text.size(), kelvin);
+    if (result.ec != std::errc{} || result.ptr != text.data() + text.size() ||
+        kelvin <= 0) {
+        throw CLI::ValidationError(
+            "temperature", "Use warm, neutral, cool, or a positive integer in Kelvin");
+    }
+    return kelvin;
+}
+
 int parse_hex_color(std::string_view hex) {
     if (hex.starts_with('#')) {
         hex.remove_prefix(1);
@@ -101,6 +121,7 @@ EXAMPLES
   goveectl power on -d "Desk Lamp"
   goveectl power off -d "Desk Lamp"
   goveectl status -d "Desk Lamp"
+  goveectl temperature warm -d "Desk Lamp"
   goveectl brightness 50 -d "Desk Lamp"
   goveectl color 255 128 0 -d "Desk Lamp"
 
@@ -229,6 +250,31 @@ Use a device ID if a name matches multiple devices.)");
 
     off_subcommand->callback(
         [&options] { options.command = Command::power_off; });
+
+    CLI::App* temperature_subcommand =
+        app.add_subcommand("temperature", "Set white color temperature in Kelvin");
+    temperature_subcommand
+        ->add_option("value", options.temperature_input,
+                     "warm (2700 K), neutral (4000 K), cool (6500 K), or Kelvin")
+        ->required();
+    temperature_subcommand
+        ->add_option("-d,--device", options.device,
+                     "Target device ID or exact name (case-sensitive)")
+        ->required();
+    temperature_subcommand->callback([&options] {
+        options.kelvin = parse_temperature(options.temperature_input);
+        options.command = Command::temperature;
+    });
+    temperature_subcommand->footer(R"(EXAMPLES
+  goveectl temperature warm -d "Desk Lamp"
+  goveectl temperature cool -d "Desk Lamp"
+  goveectl temperature 3500 -d "Desk Lamp"
+
+Presets are case-insensitive: warm = 2700 K, neutral = 4000 K, cool = 6500 K.
+Numeric input is a positive integer in Kelvin, without a K suffix.
+Requires a device supporting color temperature. Supported ranges vary by device;
+Govee validates the requested value. Values are never silently clamped.
+Requires GOVEE_API_KEY and a cache created with 'goveectl devices'.)");
 
     // CHANGE COLOR
     CLI::App* color_subcommand =

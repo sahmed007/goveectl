@@ -1,11 +1,10 @@
-#include "govee.hpp"
 #include "device_json.hpp" // IWYU pragma: keep
+#include "govee.hpp"
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
-#include <string>
 #include <vector>
 
 namespace govee {
@@ -33,7 +32,8 @@ std::filesystem::path cache_path() {
         throw std::runtime_error(
             "Could not determine an absolute user cache directory");
     }
-    return std::filesystem::path{base_dir} / suffix / "goveectl" / "devices.json";
+    return std::filesystem::path{base_dir} / suffix / "goveectl" /
+           "devices.json";
 }
 } // namespace
 
