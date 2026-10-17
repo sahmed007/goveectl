@@ -7,6 +7,7 @@ namespace govee {
 struct Device {
     std::string sku;
     std::string id;
+    std::string name;
 };
 
 std::vector<Device> list_devices(const std::string& api_key);

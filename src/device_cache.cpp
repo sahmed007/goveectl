@@ -15,7 +15,8 @@ void save_devices_cache(const std::vector<Device>& devices) {
     auto entries = nlohmann::json::array();
     for (const auto& device : devices) {
         auto entry = nlohmann::json::object(
-            {{"device", device.id}, {"sku", device.sku}});
+            {{"device", device.id}, {"sku", device.sku},
+             {"deviceName", device.name}});
         entries.push_back(entry);
     }
 
@@ -48,7 +49,8 @@ std::vector<Device> load_devices_cache() {
     std::vector<Device> devices{};
     for (const auto& entry : entries) {
         Device device{.sku = entry.at("sku").get<std::string>(),
-                      .id = entry.at("device").get<std::string>()};
+                      .id = entry.at("device").get<std::string>(),
+                      .name = entry.value("deviceName", std::string{})};
         devices.push_back(device);
     }
 

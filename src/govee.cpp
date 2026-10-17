@@ -60,7 +60,8 @@ std::vector<Device> list_devices(const std::string& api_key) {
     std::vector<Device> devices{};
     for (const auto& entry : entries) {
         Device device{.sku = entry.at("sku").get<std::string>(),
-                      .id = entry.at("device").get<std::string>()};
+                      .id = entry.at("device").get<std::string>(),
+                      .name = entry.value("deviceName", std::string{})};
 
         devices.push_back(device);
     }

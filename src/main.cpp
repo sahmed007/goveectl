@@ -14,24 +14,38 @@ void show_devices(const char* api_key) {
     std::vector<govee::Device> devices = govee::list_devices(api_key);
     govee::save_devices_cache(devices);
     for (const auto& device : devices) {
-        std::cout << "Device SKU: " << device.sku << " and "
+        std::cout << "Name: " << (device.name.empty() ? "(unnamed)" : device.name)
+                  << " | Device SKU: " << device.sku << " and "
                   << "Device ID: " << device.id << '\n';
     }
 }
 
-void change_power(const std::string& device_id, bool enabled,
+void change_power(const std::string& device_selector, bool enabled,
                   const char* api_key) {
     const auto devices = govee::load_devices_cache();
-    const auto it = std::ranges::find(devices, device_id, &govee::Device::id);
+    auto it = std::ranges::find(devices, device_selector, &govee::Device::id);
+    if (it == devices.end() && !device_selector.empty()) {
+        for (auto candidate = devices.begin(); candidate != devices.end(); ++candidate) {
+            if (candidate->name != device_selector) {
+                continue;
+            }
+            if (it != devices.end()) {
+                throw std::runtime_error(
+                    "Multiple devices named '" + device_selector +
+                    "'. Use a device ID from 'goveectl devices'.");
+            }
+            it = candidate;
+        }
+    }
 
     if (it == devices.end()) {
         throw std::runtime_error(
-            "Device not found in cache. Run 'goveectl devices' to refresh.");
+            "Device name or ID not found in cache (names are case-sensitive). Run 'goveectl devices' to refresh.");
     }
 
     govee::set_power(*it, enabled, api_key);
     std::cout << "Power " << (enabled ? "on" : "off")
-              << " request succeeded for " << device_id << '\n';
+              << " request succeeded for " << (it->name.empty() ? it->id : it->name) << '\n';
 }
 } // namespace
 
