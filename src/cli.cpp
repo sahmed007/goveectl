@@ -21,10 +21,11 @@ void configure_cli(CLI::App& app, Options& options) {
     brightness_subcommand
         ->add_option("value", options.brightness, "Brightness level")
         ->required()
-        ->check(CLI::Range(0, 100));
+        ->check(CLI::Range(1, 100));
 
     brightness_subcommand
-        ->add_option("-d,--device", options.device, "Target device ID or exact name (case-sensitive)")
+        ->add_option("-d,--device", options.device,
+                     "Target device ID or exact name (case-sensitive)")
         ->required();
 
     brightness_subcommand->callback(
@@ -38,7 +39,9 @@ void configure_cli(CLI::App& app, Options& options) {
     CLI::App* on_subcommand =
         power_subcommand->add_subcommand("on", "Turn a device on");
 
-    on_subcommand->add_option("-d,--device", options.device, "Target device ID or exact name (case-sensitive)")
+    on_subcommand
+        ->add_option("-d,--device", options.device,
+                     "Target device ID or exact name (case-sensitive)")
         ->required();
 
     on_subcommand->callback(
@@ -47,7 +50,9 @@ void configure_cli(CLI::App& app, Options& options) {
     CLI::App* off_subcommand =
         power_subcommand->add_subcommand("off", "Turn a device off");
 
-    off_subcommand->add_option("-d,--device", options.device, "Target device ID or exact name (case-sensitive)")
+    off_subcommand
+        ->add_option("-d,--device", options.device,
+                     "Target device ID or exact name (case-sensitive)")
         ->required();
 
     off_subcommand->callback(
@@ -69,7 +74,9 @@ void configure_cli(CLI::App& app, Options& options) {
         ->required()
         ->check(CLI::Range(0, 255));
 
-    color_subcommand->add_option("-d,--device", options.device, "Target device ID or exact name (case-sensitive)")
+    color_subcommand
+        ->add_option("-d,--device", options.device,
+                     "Target device ID or exact name (case-sensitive)")
         ->required();
 
     color_subcommand->callback(

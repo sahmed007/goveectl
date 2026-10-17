@@ -10,22 +10,12 @@
 #include <vector>
 
 namespace {
-void show_devices(const char* api_key) {
-    std::vector<govee::Device> devices = govee::list_devices(api_key);
-    govee::save_devices_cache(devices);
-    for (const auto& device : devices) {
-        std::cout << "Name: " << (device.name.empty() ? "(unnamed)" : device.name)
-                  << " | Device SKU: " << device.sku << " and "
-                  << "Device ID: " << device.id << '\n';
-    }
-}
-
-void change_power(const std::string& device_selector, bool enabled,
-                  const char* api_key) {
+govee::Device find_device(const std::string& device_selector) {
     const auto devices = govee::load_devices_cache();
     auto it = std::ranges::find(devices, device_selector, &govee::Device::id);
     if (it == devices.end() && !device_selector.empty()) {
-        for (auto candidate = devices.begin(); candidate != devices.end(); ++candidate) {
+        for (auto candidate = devices.begin(); candidate != devices.end();
+             ++candidate) {
             if (candidate->name != device_selector) {
                 continue;
             }
@@ -40,12 +30,39 @@ void change_power(const std::string& device_selector, bool enabled,
 
     if (it == devices.end()) {
         throw std::runtime_error(
-            "Device name or ID not found in cache (names are case-sensitive). Run 'goveectl devices' to refresh.");
+            "Device name or ID not found in cache (names are case-sensitive). "
+            "Run 'goveectl devices' to refresh.");
     }
 
-    govee::set_power(*it, enabled, api_key);
+    return *it;
+}
+
+void show_devices(const char* api_key) {
+    std::vector<govee::Device> devices = govee::list_devices(api_key);
+    govee::save_devices_cache(devices);
+    for (const auto& device : devices) {
+        std::cout << "Name: "
+                  << (device.name.empty() ? "(unnamed)" : device.name)
+                  << " | Device SKU: " << device.sku << " and "
+                  << "Device ID: " << device.id << '\n';
+    }
+}
+
+void change_power(const std::string& device_selector, bool enabled,
+                  const char* api_key) {
+    const auto device = find_device(device_selector);
+    govee::set_power(device, enabled, api_key);
     std::cout << "Power " << (enabled ? "on" : "off")
-              << " request succeeded for " << (it->name.empty() ? it->id : it->name) << '\n';
+              << " request succeeded for "
+              << (device.name.empty() ? device.id : device.name) << '\n';
+}
+
+void change_brightness(const std::string& device_selector, int value,
+                       const char* api_key) {
+    const auto device = find_device(device_selector);
+    govee::set_brightness(device, value, api_key);
+    std::cout << "Changed brightness off " << device.name << " to " << value
+              << '\n';
 }
 } // namespace
 
@@ -74,8 +91,7 @@ int main(int argc, char** argv) {
             change_power(options.device, false, api_key);
             break;
         case Command::brightness:
-            std::cout << "Changing brightness of " << options.device << " to "
-                      << options.brightness << "%\n";
+            change_brightness(options.device, options.brightness, api_key);
             break;
         case Command::color:
             std::cout << "Setting color to RGB(" << options.red << ", "

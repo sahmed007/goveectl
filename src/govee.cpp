@@ -91,4 +91,27 @@ void set_power(const Device& device, bool enabled, const std::string& api_key) {
     parse_response(response);
 }
 
+void set_brightness(const Device& device, int value,
+                    const std::string& api_key) {
+    nlohmann::json capability = {{"type", "devices.capabilities.range"},
+                                 {"instance", "brightness"},
+                                 {"value", value}};
+
+    nlohmann::json payload = {
+        {"sku", device.sku}, {"device", device.id}, {"capability", capability}};
+
+    const auto id = uuids::uuid_system_generator{}();
+
+    nlohmann::json request_body = {{"requestId", uuids::to_string(id)},
+                                   {"payload", payload}};
+
+    cpr::Response response = cpr::Post(
+        cpr::Url{"https://openapi.api.govee.com/router/api/v1/device/control"},
+        cpr::Header{{"Govee-API-Key", api_key},
+                    {"Content-Type", "application/json"}},
+        cpr::Body{request_body.dump()}, cpr::Timeout(10000));
+
+    parse_response(response);
+}
+
 } // namespace govee
