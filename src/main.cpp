@@ -1,6 +1,8 @@
 #include "CLI11.hpp"
 #include "cli.hpp"
 #include "govee.hpp"
+#include "terminal.hpp"
+#include <sstream>
 #include <algorithm>
 #include <cstdlib>
 #include <exception>
@@ -52,7 +54,7 @@ void change_power(const std::string& device_selector, bool enabled,
                   const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_power(device, enabled, api_key);
-    std::cout << "Power " << (enabled ? "on" : "off")
+    std::cout << terminal::success("Success: ") << "Power " << (enabled ? "on" : "off")
               << " request succeeded for "
               << (device.name.empty() ? device.id : device.name) << '\n';
 }
@@ -61,7 +63,7 @@ void change_brightness(const std::string& device_selector, int value,
                        const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_brightness(device, value, api_key);
-    std::cout << "Changed brightness of " << device.name << " to " << value
+    std::cout << terminal::success("Success: ") << "Changed brightness of " << device.name << " to " << value
               << '\n';
 }
 
@@ -69,21 +71,30 @@ void change_color(const std::string& device_selector, int red, int green,
                   int blue, const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_color(device, red, green, blue, api_key);
-    std::cout << "Changed color to RGB(" << red << ", " << green << ", " << blue
+    std::cout << terminal::success("Success: ") << "Changed color to RGB(" << red << ", " << green << ", " << blue
               << ")\n";
 }
 } // namespace
 
 int main(int argc, char** argv) {
     Options options;
-    CLI::App app{"Govee Cloud CLI"};
+    CLI::App app{"goveectl — control Govee devices from your terminal"};
 
     configure_cli(app, options);
-    CLI11_PARSE(app, argc, argv);
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError& error) {
+        std::ostringstream output;
+        std::ostringstream errors;
+        const int status = app.exit(error, output, errors);
+        std::cout << output.str();
+        std::cerr << terminal::error(errors.str());
+        return status;
+    }
 
     const char* api_key = std::getenv("GOVEE_API_KEY");
     if (api_key == nullptr || api_key[0] == '\0') {
-        std::cerr << "GOVEE_API_KEY is not set\n";
+        std::cerr << terminal::error("GOVEE_API_KEY is not set") << '\n';
         return 1;
     }
 
@@ -106,11 +117,11 @@ int main(int argc, char** argv) {
                          options.blue, api_key);
             break;
         case Command::none:
-            std::cerr << "No command selected" << '\n';
+            std::cerr << terminal::error("No command selected") << '\n';
             return 1;
         }
     } catch (const std::exception& error) {
-        std::cerr << error.what() << '\n';
+        std::cerr << terminal::error(error.what()) << '\n';
         return 1;
     }
 
