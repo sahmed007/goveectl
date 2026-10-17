@@ -9,6 +9,32 @@
 #include <string>
 #include <vector>
 
+namespace {
+void show_devices(const char* api_key) {
+    std::vector<govee::Device> devices = govee::list_devices(api_key);
+    govee::save_devices_cache(devices);
+    for (const auto& device : devices) {
+        std::cout << "Device SKU: " << device.sku << " and "
+                  << "Device ID: " << device.id << '\n';
+    }
+}
+
+void change_power(const std::string& device_id, bool enabled,
+                  const char* api_key) {
+    const auto devices = govee::load_devices_cache();
+    const auto it = std::ranges::find(devices, device_id, &govee::Device::id);
+
+    if (it == devices.end()) {
+        throw std::runtime_error(
+            "Device not found in cache. Run 'goveectl devices' to refresh.");
+    }
+
+    govee::set_power(*it, enabled, api_key);
+    std::cout << "Power " << (enabled ? "on" : "off")
+              << " request succeeded for " << device_id << '\n';
+}
+} // namespace
+
 int main(int argc, char** argv) {
     Options options;
     CLI::App app{"Govee Cloud CLI"};
@@ -22,48 +48,31 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    switch (options.command) {
-    case Command::devices:
-        try {
-            std::vector<govee::Device> devices = govee::list_devices(api_key);
-            govee::save_devices_cache(devices);
-            for (const auto& d : devices) {
-                std::cout << "Device SKU: " << d.sku << " and "
-                          << "Device ID: " << d.id << '\n';
-            }
-        } catch (const std::exception& error) {
-            std::cerr << error.what() << '\n';
+    try {
+        switch (options.command) {
+        case Command::devices:
+            show_devices(api_key);
+            break;
+        case Command::power_on:
+            change_power(options.device, true, api_key);
+            break;
+        case Command::power_off:
+            change_power(options.device, false, api_key);
+            break;
+        case Command::brightness:
+            std::cout << "Changing brightness of " << options.device << " to "
+                      << options.brightness << "%\n";
+            break;
+        case Command::color:
+            std::cout << "Setting color to RGB(" << options.red << ", "
+                      << options.green << ", " << options.blue << ")\n";
+            break;
+        case Command::none:
+            std::cerr << "No command selected" << '\n';
             return 1;
         }
-        break;
-    case Command::power_on:
-        try {
-            std::vector<govee::Device> devices = govee::load_devices_cache();
-            auto it =
-                std::ranges::find(devices, options.device, &govee::Device::id);
-            if (it == devices.end()) {
-                throw std::runtime_error("Device not found in cache. Run "
-                                         "'goveectl devices' to refresh.");
-            }
-            std::cout << "Found device: " << it->sku << " " << it->id << '\n';
-        } catch (const std::exception& error) {
-            std::cerr << error.what() << '\n';
-            return 1;
-        }
-        break;
-    case Command::power_off:
-        std::cout << "Turning off " << options.device << "\n";
-        break;
-    case Command::brightness:
-        std::cout << "Changing brightness of " << options.device << " to "
-                  << options.brightness << "%\n";
-        break;
-    case Command::color:
-        std::cout << "Setting color to RGB(" << options.red << ", "
-                  << options.green << ", " << options.blue << ")\n";
-        break;
-    case Command::none:
-        std::cerr << "No command selected" << '\n';
+    } catch (const std::exception& error) {
+        std::cerr << error.what() << '\n';
         return 1;
     }
 
