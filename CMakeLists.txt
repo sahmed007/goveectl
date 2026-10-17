@@ -45,6 +45,8 @@ FetchContent_MakeAvailable(stduuid)
 # Executable
 add_executable(goveectl
     src/main.cpp
+    src/commands.cpp
+    src/display.cpp
     src/govee.cpp
     src/device_cache.cpp
     src/cli.cpp

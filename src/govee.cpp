@@ -1,4 +1,5 @@
 #include "govee.hpp"
+#include "device_json.hpp" // IWYU pragma: keep
 #include "uuid.h"
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
@@ -79,7 +80,8 @@ DeviceState parse_device_state(const nlohmann::json& body) {
         }
     }
 
-    // Keep offline readings as last-known values; callers must label them as such.
+    // Keep offline readings as last-known values; callers must label them as
+    // such.
     return state;
 }
 
@@ -116,16 +118,7 @@ std::vector<Device> list_devices(const std::string& api_key) {
         throw std::runtime_error("Expected a device array");
     }
 
-    std::vector<Device> devices{};
-    for (const auto& entry : entries) {
-        Device device{.sku = entry.at("sku").get<std::string>(),
-                      .id = entry.at("device").get<std::string>(),
-                      .name = entry.value("deviceName", std::string{})};
-
-        devices.push_back(device);
-    }
-
-    return devices;
+    return entries.get<std::vector<Device>>();
 }
 
 DeviceState get_device_state(const Device& device, const std::string& api_key) {

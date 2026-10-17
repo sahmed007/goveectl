@@ -1,4 +1,5 @@
 #include "govee.hpp"
+#include "device_json.hpp" // IWYU pragma: keep
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -37,13 +38,7 @@ std::filesystem::path cache_path() {
 } // namespace
 
 void save_devices_cache(const std::vector<Device>& devices) {
-    auto entries = nlohmann::json::array();
-    for (const auto& device : devices) {
-        auto entry = nlohmann::json::object({{"device", device.id},
-                                             {"sku", device.sku},
-                                             {"deviceName", device.name}});
-        entries.push_back(entry);
-    }
+    const nlohmann::json entries = devices;
 
     const auto path = cache_path();
     std::filesystem::create_directories(path.parent_path());
@@ -73,15 +68,7 @@ std::vector<Device> load_devices_cache() {
         throw std::runtime_error("Expected a device array");
     }
 
-    std::vector<Device> devices{};
-    for (const auto& entry : entries) {
-        Device device{.sku = entry.at("sku").get<std::string>(),
-                      .id = entry.at("device").get<std::string>(),
-                      .name = entry.value("deviceName", std::string{})};
-        devices.push_back(device);
-    }
-
-    return devices;
+    return entries.get<std::vector<Device>>();
 }
 
 } // namespace govee
