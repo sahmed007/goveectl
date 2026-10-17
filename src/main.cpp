@@ -2,11 +2,12 @@
 #include "cli.hpp"
 #include "govee.hpp"
 #include "terminal.hpp"
-#include <sstream>
 #include <algorithm>
 #include <cstdlib>
 #include <exception>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -39,23 +40,51 @@ govee::Device find_device(const std::string& device_selector) {
     return *it;
 }
 
-void show_devices(const char* api_key) {
-    std::vector<govee::Device> devices = govee::list_devices(api_key);
-    govee::save_devices_cache(devices);
-    for (const auto& device : devices) {
-        std::cout << "Name: "
-                  << (device.name.empty() ? "(unnamed)" : device.name)
-                  << " | Device SKU: " << device.sku << " and "
-                  << "Device ID: " << device.id << '\n';
+void print_devices(const std::vector<govee::Device>& devices) {
+    if (devices.empty()) {
+        std::cout << "No devices found.\n";
+        return;
     }
+
+    std::size_t name_width = 4;
+    std::size_t model_width = 5;
+    for (const auto& device : devices) {
+        const auto name = device.name.empty() ? "(unnamed)" : device.name;
+        name_width = std::max(name_width, name.size());
+        model_width = std::max(model_width, device.sku.size());
+    }
+    name_width += 2;
+    model_width += 2;
+
+    std::ostringstream header;
+    header << std::left << std::setw(static_cast<int>(name_width)) << "NAME"
+           << std::setw(static_cast<int>(model_width)) << "MODEL"
+           << "DEVICE ID";
+    std::cout << terminal::style(header.str(), "1") << '\n';
+
+    std::ostringstream rows;
+    rows << std::left;
+    for (const auto& device : devices) {
+        rows << std::setw(static_cast<int>(name_width))
+             << (device.name.empty() ? "(unnamed)" : device.name)
+             << std::setw(static_cast<int>(model_width)) << device.sku
+             << device.id << '\n';
+    }
+    std::cout << rows.str();
+}
+
+void show_devices(const char* api_key) {
+    const auto devices = govee::list_devices(api_key);
+    govee::save_devices_cache(devices);
+    print_devices(devices);
 }
 
 void change_power(const std::string& device_selector, bool enabled,
                   const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_power(device, enabled, api_key);
-    std::cout << terminal::success("Success: ") << "Power " << (enabled ? "on" : "off")
-              << " request succeeded for "
+    std::cout << terminal::success("Success: ") << "Power "
+              << (enabled ? "on" : "off") << " request succeeded for "
               << (device.name.empty() ? device.id : device.name) << '\n';
 }
 
@@ -63,16 +92,16 @@ void change_brightness(const std::string& device_selector, int value,
                        const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_brightness(device, value, api_key);
-    std::cout << terminal::success("Success: ") << "Changed brightness of " << device.name << " to " << value
-              << '\n';
+    std::cout << terminal::success("Success: ") << "Changed brightness of "
+              << device.name << " to " << value << '\n';
 }
 
 void change_color(const std::string& device_selector, int red, int green,
                   int blue, const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_color(device, red, green, blue, api_key);
-    std::cout << terminal::success("Success: ") << "Changed color to RGB(" << red << ", " << green << ", " << blue
-              << ")\n";
+    std::cout << terminal::success("Success: ") << "Changed color to RGB("
+              << red << ", " << green << ", " << blue << ")\n";
 }
 } // namespace
 
