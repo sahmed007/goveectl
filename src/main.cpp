@@ -1,10 +1,13 @@
 #include "CLI11.hpp"
 #include "cli.hpp"
 #include "govee.hpp"
+#include <algorithm>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 int main(int argc, char** argv) {
     Options options;
@@ -22,14 +25,31 @@ int main(int argc, char** argv) {
     switch (options.command) {
     case Command::devices:
         try {
-            std::cout << govee::list_devices(api_key) << '\n';
+            std::vector<govee::Device> devices = govee::list_devices(api_key);
+            govee::save_devices_cache(devices);
+            for (const auto& d : devices) {
+                std::cout << "Device SKU: " << d.sku << " and "
+                          << "Device ID: " << d.id << '\n';
+            }
         } catch (const std::exception& error) {
             std::cerr << error.what() << '\n';
             return 1;
         }
         break;
     case Command::power_on:
-        std::cout << "Turning on " << options.device << "\n";
+        try {
+            std::vector<govee::Device> devices = govee::load_devices_cache();
+            auto it =
+                std::ranges::find(devices, options.device, &govee::Device::id);
+            if (it == devices.end()) {
+                throw std::runtime_error("Device not found in cache. Run "
+                                         "'goveectl devices' to refresh.");
+            }
+            std::cout << "Found device: " << it->sku << " " << it->id << '\n';
+        } catch (const std::exception& error) {
+            std::cerr << error.what() << '\n';
+            return 1;
+        }
         break;
     case Command::power_off:
         std::cout << "Turning off " << options.device << "\n";
