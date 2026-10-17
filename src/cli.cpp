@@ -1,5 +1,6 @@
 #include "cli.hpp"
 #include "terminal.hpp"
+#include <charconv>
 #include <memory>
 #include <sstream>
 #include <string_view>
@@ -7,6 +8,53 @@
 constexpr inline std::string_view GOVEECTL_VERSION = "0.1";
 
 namespace {
+int parse_hex_color(std::string_view hex) {
+    if (hex.starts_with('#')) {
+        hex.remove_prefix(1);
+    }
+    unsigned int rgb = 0;
+    const auto result =
+        std::from_chars(hex.data(), hex.data() + hex.size(), rgb, 16);
+    if (hex.size() != 6 || result.ec != std::errc{} ||
+        result.ptr != hex.data() + hex.size()) {
+        throw CLI::ValidationError(
+            "color", "Expected six hex digits, optionally prefixed with # "
+                     "(e.g. \"#FF8000\")");
+    }
+    return static_cast<int>(rgb);
+}
+
+int parse_rgb_channel(std::string_view text) {
+    int value = 0;
+    const auto result =
+        std::from_chars(text.data(), text.data() + text.size(), value);
+    if (result.ec != std::errc{} || result.ptr != text.data() + text.size() ||
+        value < 0 || value > 255) {
+        throw CLI::ValidationError(
+            "color", "RGB channels must be integers from 0 to 255");
+    }
+    return value;
+}
+
+void parse_color(Options& options) {
+    const auto& values = options.color_values;
+    if (values.size() == 1) {
+        const int rgb = parse_hex_color(values.front());
+        options.red = (rgb >> 16) & 255;
+        options.green = (rgb >> 8) & 255;
+        options.blue = rgb & 255;
+        return;
+    }
+    if (values.size() == 3) {
+        options.red = parse_rgb_channel(values[0]);
+        options.green = parse_rgb_channel(values[1]);
+        options.blue = parse_rgb_channel(values[2]);
+        return;
+    }
+    throw CLI::ValidationError("color",
+                               "Supply one hex color or three RGB integers");
+}
+
 class ColorFormatter : public CLI::Formatter {
   public:
     std::string make_help(const CLI::App* app, std::string name,
@@ -92,8 +140,9 @@ Any failed state query causes a nonzero exit code.)");
     devices_subcommand->callback(
         [&options] { options.command = Command::devices; });
 
-    CLI::App* status_subcommand =
-        app.add_subcommand("status", "Query a device's connectivity, power, brightness, and color");
+    CLI::App* status_subcommand = app.add_subcommand(
+        "status",
+        "Query a device's connectivity, power, brightness, and color");
     status_subcommand
         ->add_option("-d,--device", options.device,
                      "Target device ID or exact name (case-sensitive)")
@@ -185,17 +234,11 @@ Use a device ID if a name matches multiple devices.)");
     CLI::App* color_subcommand =
         app.add_subcommand("color", "Change a device's color");
 
-    color_subcommand->add_option("r", options.red, "Red channel (0-255)")
-        ->required()
-        ->check(CLI::Range(0, 255));
-
-    color_subcommand->add_option("g", options.green, "Green channel (0-255)")
-        ->required()
-        ->check(CLI::Range(0, 255));
-
-    color_subcommand->add_option("b", options.blue, "Blue channel (0-255)")
-        ->required()
-        ->check(CLI::Range(0, 255));
+    color_subcommand
+        ->add_option("color", options.color_values,
+                     "Hex RRGGBB / #RRGGBB, or three RGB integers (0-255)")
+        ->expected(1, 3)
+        ->required();
 
     color_subcommand
         ->add_option("-d,--device", options.device,
@@ -203,15 +246,20 @@ Use a device ID if a name matches multiple devices.)");
         ->required();
 
     color_subcommand->footer(R"(EXAMPLES
+  goveectl color "#FF8000" -d "Desk Lamp"   # Orange
+  goveectl color ff8000 -d "Desk Lamp"      # Same, without #
   goveectl color 255 0 0 -d "Desk Lamp"      # Red
   goveectl color 0 255 0 -d "Desk Lamp"      # Green
   goveectl color 0 0 255 -d "Desk Lamp"      # Blue
   goveectl color 255 128 0 -d "Desk Lamp"    # Orange
 
-Supply three integers in RED GREEN BLUE order, each from 0 to 255.
+Supply six hex digits (case-insensitive, optional #), or three integers in
+RED GREEN BLUE order, each from 0 to 255. Quote colors starting with #.
 Requires GOVEE_API_KEY and a cache created with 'goveectl devices'.
 Names are case-sensitive; use an ID if a name matches multiple devices.)");
 
-    color_subcommand->callback(
-        [&options]() { options.command = Command::color; });
+    color_subcommand->callback([&options]() {
+        parse_color(options);
+        options.command = Command::color;
+    });
 };
