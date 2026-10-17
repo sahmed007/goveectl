@@ -17,6 +17,9 @@ void set_power(const Device& device, bool enabled, const std::string& api_key);
 void set_brightness(const Device& device, int value,
                     const std::string& api_key);
 
+void set_color(const Device& device, int red, int green, int blue,
+               const std::string& api_key);
+
 void save_devices_cache(const std::vector<Device>& devices);
 
 std::vector<Device> load_devices_cache();

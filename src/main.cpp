@@ -61,8 +61,16 @@ void change_brightness(const std::string& device_selector, int value,
                        const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_brightness(device, value, api_key);
-    std::cout << "Changed brightness off " << device.name << " to " << value
+    std::cout << "Changed brightness of " << device.name << " to " << value
               << '\n';
+}
+
+void change_color(const std::string& device_selector, int red, int green,
+                  int blue, const char* api_key) {
+    const auto device = find_device(device_selector);
+    govee::set_color(device, red, green, blue, api_key);
+    std::cout << "Changed color to RGB(" << red << ", " << green << ", " << blue
+              << ")\n";
 }
 } // namespace
 
@@ -94,8 +102,8 @@ int main(int argc, char** argv) {
             change_brightness(options.device, options.brightness, api_key);
             break;
         case Command::color:
-            std::cout << "Setting color to RGB(" << options.red << ", "
-                      << options.green << ", " << options.blue << ")\n";
+            change_color(options.device, options.red, options.green,
+                         options.blue, api_key);
             break;
         case Command::none:
             std::cerr << "No command selected" << '\n';

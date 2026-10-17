@@ -42,6 +42,24 @@ nlohmann::json parse_response(const cpr::Response& response) {
     return body;
 }
 
+void send_control(const Device& device, const nlohmann::json& capability,
+                  const std::string& api_key) {
+    nlohmann::json payload = {
+        {"sku", device.sku}, {"device", device.id}, {"capability", capability}};
+
+    const auto id = uuids::uuid_system_generator{}();
+    nlohmann::json request_body = {{"requestId", uuids::to_string(id)},
+                                   {"payload", payload}};
+
+    cpr::Response response = cpr::Post(
+        cpr::Url{"https://openapi.api.govee.com/router/api/v1/device/control"},
+        cpr::Header{{"Govee-API-Key", api_key},
+                    {"Content-Type", "application/json"}},
+        cpr::Body{request_body.dump()}, cpr::Timeout(10000));
+
+    parse_response(response);
+}
+
 } // namespace
 
 std::vector<Device> list_devices(const std::string& api_key) {
@@ -73,22 +91,7 @@ void set_power(const Device& device, bool enabled, const std::string& api_key) {
     nlohmann::json capability = {{"type", "devices.capabilities.on_off"},
                                  {"instance", "powerSwitch"},
                                  {"value", enabled ? 1 : 0}};
-
-    nlohmann::json payload = {
-        {"sku", device.sku}, {"device", device.id}, {"capability", capability}};
-
-    const auto id = uuids::uuid_system_generator{}();
-
-    nlohmann::json request_body = {{"requestId", uuids::to_string(id)},
-                                   {"payload", payload}};
-
-    cpr::Response response = cpr::Post(
-        cpr::Url{"https://openapi.api.govee.com/router/api/v1/device/control"},
-        cpr::Header{{"Govee-API-Key", api_key},
-                    {"Content-Type", "application/json"}},
-        cpr::Body{request_body.dump()}, cpr::Timeout(10000));
-
-    parse_response(response);
+    send_control(device, capability, api_key);
 }
 
 void set_brightness(const Device& device, int value,
@@ -96,22 +99,16 @@ void set_brightness(const Device& device, int value,
     nlohmann::json capability = {{"type", "devices.capabilities.range"},
                                  {"instance", "brightness"},
                                  {"value", value}};
+    send_control(device, capability, api_key);
+}
 
-    nlohmann::json payload = {
-        {"sku", device.sku}, {"device", device.id}, {"capability", capability}};
-
-    const auto id = uuids::uuid_system_generator{}();
-
-    nlohmann::json request_body = {{"requestId", uuids::to_string(id)},
-                                   {"payload", payload}};
-
-    cpr::Response response = cpr::Post(
-        cpr::Url{"https://openapi.api.govee.com/router/api/v1/device/control"},
-        cpr::Header{{"Govee-API-Key", api_key},
-                    {"Content-Type", "application/json"}},
-        cpr::Body{request_body.dump()}, cpr::Timeout(10000));
-
-    parse_response(response);
+void set_color(const Device& device, int red, int green, int blue,
+               const std::string& api_key) {
+    int rgb = red * 256 * 256 + green * 256 + blue;
+    nlohmann::json capability = {{"type", "devices.capabilities.color_setting"},
+                                 {"instance", "colorRgb"},
+                                 {"value", rgb}};
+    send_control(device, capability, api_key);
 }
 
 } // namespace govee
