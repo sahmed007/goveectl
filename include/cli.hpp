@@ -3,7 +3,7 @@
 #include "CLI11.hpp"
 #include <string>
 
-enum class Command { none, devices, power_on, power_off, brightness, color };
+enum class Command { none, devices, status, power_on, power_off, brightness, color };
 
 struct Options {
     Command command = Command::none;

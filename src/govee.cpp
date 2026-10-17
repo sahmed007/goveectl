@@ -35,11 +35,52 @@ nlohmann::json parse_response(const cpr::Response& response) {
             "Govee API failed (code " + body.at("code").dump() + ")";
         if (body.contains("message") && body.at("message").is_string()) {
             message += ": " + body.at("message").get<std::string>();
+        } else if (body.contains("msg") && body.at("msg").is_string()) {
+            message += ": " + body.at("msg").get<std::string>();
         }
         throw std::runtime_error(message);
     }
 
     return body;
+}
+
+DeviceState parse_device_state(const nlohmann::json& body) {
+    const auto& capabilities = body.at("payload").at("capabilities");
+    if (!capabilities.is_array()) {
+        throw std::runtime_error("Expected a device state capabilities array");
+    }
+
+    DeviceState state;
+    for (const auto& capability : capabilities) {
+        if (!capability.is_object() || !capability.contains("state") ||
+            !capability.at("state").is_object() ||
+            !capability.at("state").contains("value")) {
+            continue;
+        }
+        const auto& value = capability.at("state").at("value");
+        const auto type = capability.value("type", std::string{});
+        const auto instance = capability.value("instance", std::string{});
+
+        if (type == "devices.capabilities.online" && instance == "online" &&
+            value.is_boolean()) {
+            state.online = value.get<bool>();
+        } else if (type == "devices.capabilities.on_off" &&
+                   instance == "powerSwitch" && value.is_number_integer() &&
+                   (value == 0 || value == 1)) {
+            state.power = value == 1;
+        } else if (type == "devices.capabilities.range" &&
+                   instance == "brightness" && value.is_number_integer() &&
+                   value >= 0 && value <= 100) {
+            state.brightness = value.get<int>();
+        } else if (type == "devices.capabilities.color_setting" &&
+                   instance == "colorRgb" && value.is_number_integer() &&
+                   value >= 0 && value <= 16777215) {
+            state.color_rgb = value.get<int>();
+        }
+    }
+
+    // Keep offline readings as last-known values; callers must label them as such.
+    return state;
 }
 
 void send_control(const Device& device, const nlohmann::json& capability,
@@ -85,6 +126,21 @@ std::vector<Device> list_devices(const std::string& api_key) {
     }
 
     return devices;
+}
+
+DeviceState get_device_state(const Device& device, const std::string& api_key) {
+    nlohmann::json payload = {{"sku", device.sku}, {"device", device.id}};
+    const auto id = uuids::uuid_system_generator{}();
+    nlohmann::json request_body = {{"requestId", uuids::to_string(id)},
+                                   {"payload", payload}};
+
+    cpr::Response response = cpr::Post(
+        cpr::Url{"https://openapi.api.govee.com/router/api/v1/device/state"},
+        cpr::Header{{"Govee-API-Key", api_key},
+                    {"Content-Type", "application/json"}},
+        cpr::Body{request_body.dump()}, cpr::Timeout(10000));
+
+    return parse_device_state(parse_response(response));
 }
 
 void set_power(const Device& device, bool enabled, const std::string& api_key) {

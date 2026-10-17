@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -10,7 +11,16 @@ struct Device {
     std::string name;
 };
 
+struct DeviceState {
+    std::optional<bool> online;
+    std::optional<bool> power;
+    std::optional<int> brightness;
+    std::optional<int> color_rgb;
+};
+
 std::vector<Device> list_devices(const std::string& api_key);
+
+DeviceState get_device_state(const Device& device, const std::string& api_key);
 
 void set_power(const Device& device, bool enabled, const std::string& api_key);
 

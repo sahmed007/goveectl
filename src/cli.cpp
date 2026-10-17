@@ -52,6 +52,7 @@ void configure_cli(CLI::App& app, Options& options) {
 EXAMPLES
   goveectl power on -d "Desk Lamp"
   goveectl power off -d "Desk Lamp"
+  goveectl status -d "Desk Lamp"
   goveectl brightness 50 -d "Desk Lamp"
   goveectl color 255 128 0 -d "Desk Lamp"
 
@@ -61,7 +62,8 @@ DEVICE SELECTION
   Run 'goveectl devices' again after adding or renaming a device.
 
 CACHE
-  Control commands read the cache; they do not fetch the device list.
+  Control and status commands resolve devices from the cache.
+  Status makes one state request; devices refreshes the list and queries each device.
   macOS:   ~/Library/Caches/goveectl/devices.json
   Linux:   $XDG_CACHE_HOME/goveectl/devices.json
            (default: ~/.cache/goveectl/devices.json)
@@ -75,17 +77,36 @@ MORE HELP
 
     // LIST DEVICES
     CLI::App* devices_subcommand = app.add_subcommand(
-        "devices", "Fetch device names and IDs and refresh the cache");
+        "devices", "Refresh the cache and show live connectivity and power");
 
     devices_subcommand->footer(R"(EXAMPLE
   goveectl devices
 
 Requires GOVEE_API_KEY and an internet connection. Run this once before
 controlling devices, and again after adding or renaming a device.
-The cache is shared across working directories.)");
+The cache is shared across working directories. Makes one list request plus
+one state request per device. Offline power is shown as Unknown.
+Failed state queries show Error; other rows are still displayed.
+Any failed state query causes a nonzero exit code.)");
 
     devices_subcommand->callback(
         [&options] { options.command = Command::devices; });
+
+    CLI::App* status_subcommand =
+        app.add_subcommand("status", "Query a device's connectivity, power, brightness, and color");
+    status_subcommand
+        ->add_option("-d,--device", options.device,
+                     "Target device ID or exact name (case-sensitive)")
+        ->required();
+    status_subcommand->callback(
+        [&options] { options.command = Command::status; });
+    status_subcommand->footer(R"(EXAMPLE
+  goveectl status -d "Desk Lamp"
+
+Requires GOVEE_API_KEY and a cache created with 'goveectl devices'.
+Queries state once. Missing values display Unknown.
+Offline readings are labeled last-known; unknown connectivity is unverified.
+Names are case-sensitive; use an ID if a name matches multiple devices.)");
 
     // CHANGE BRIGHTNESS
     CLI::App* brightness_subcommand =

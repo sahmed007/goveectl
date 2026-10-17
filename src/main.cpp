@@ -40,7 +40,27 @@ govee::Device find_device(const std::string& device_selector) {
     return *it;
 }
 
-void print_devices(const std::vector<govee::Device>& devices) {
+struct DeviceRow {
+    govee::Device device;
+    govee::DeviceState state;
+    bool failed = false;
+};
+
+std::string online_text(const std::optional<bool>& online) {
+    if (!online.has_value()) {
+        return "Unknown";
+    }
+    return *online ? "Online" : "Offline";
+}
+
+std::string power_text(const std::optional<bool>& power) {
+    if (!power.has_value()) {
+        return "Unknown";
+    }
+    return *power ? "On" : "Off";
+}
+
+void print_devices(const std::vector<DeviceRow>& devices) {
     if (devices.empty()) {
         std::cout << "No devices found.\n";
         return;
@@ -48,7 +68,8 @@ void print_devices(const std::vector<govee::Device>& devices) {
 
     std::size_t name_width = 4;
     std::size_t model_width = 5;
-    for (const auto& device : devices) {
+    for (const auto& row : devices) {
+        const auto& device = row.device;
         const auto name = device.name.empty() ? "(unnamed)" : device.name;
         name_width = std::max(name_width, name.size());
         model_width = std::max(model_width, device.sku.size());
@@ -59,24 +80,67 @@ void print_devices(const std::vector<govee::Device>& devices) {
     std::ostringstream header;
     header << std::left << std::setw(static_cast<int>(name_width)) << "NAME"
            << std::setw(static_cast<int>(model_width)) << "MODEL"
+           << std::setw(10) << "STATUS" << std::setw(9) << "POWER"
            << "DEVICE ID";
     std::cout << terminal::style(header.str(), "1") << '\n';
 
     std::ostringstream rows;
     rows << std::left;
-    for (const auto& device : devices) {
+    for (const auto& row : devices) {
+        const auto& device = row.device;
+        const auto status = row.failed ? "Error" : online_text(row.state.online);
+        const auto power = row.failed ? "Error"
+            : row.state.online == true ? power_text(row.state.power) : "Unknown";
         rows << std::setw(static_cast<int>(name_width))
              << (device.name.empty() ? "(unnamed)" : device.name)
              << std::setw(static_cast<int>(model_width)) << device.sku
+             << std::setw(10) << status << std::setw(9) << power
              << device.id << '\n';
     }
     std::cout << rows.str();
 }
 
-void show_devices(const char* api_key) {
+bool show_devices(const char* api_key) {
     const auto devices = govee::list_devices(api_key);
     govee::save_devices_cache(devices);
-    print_devices(devices);
+    std::vector<DeviceRow> rows;
+    bool success = true;
+    for (const auto& device : devices) {
+        DeviceRow row{device, {}, false};
+        try {
+            row.state = govee::get_device_state(device, api_key);
+        } catch (const std::exception& error) {
+            row.failed = true;
+            success = false;
+            std::cerr << terminal::error("State query failed for " + device.id +
+                                         ": " + error.what()) << '\n';
+        }
+        rows.push_back(row);
+    }
+    print_devices(rows);
+    return success;
+}
+
+void show_status(const std::string& device_selector, const char* api_key) {
+    const auto device = find_device(device_selector);
+    const auto state = govee::get_device_state(device, api_key);
+    std::cout << "Name: " << (device.name.empty() ? "(unnamed)" : device.name)
+              << "\nModel: " << device.sku << "\nDevice ID: " << device.id
+              << "\nStatus: " << online_text(state.online) << '\n';
+    const std::string qualifier = state.online == false ? " (last-known)"
+        : !state.online.has_value() ? " (unverified)" : "";
+    std::cout << "Power" << qualifier << ": " << power_text(state.power) << '\n'
+              << "Brightness" << qualifier << ": "
+              << (state.brightness ? std::to_string(*state.brightness) + "%" : "Unknown")
+              << '\n';
+    std::ostringstream color;
+    if (state.color_rgb) {
+        color << '#' << std::uppercase << std::hex << std::setfill('0')
+              << std::setw(6) << *state.color_rgb;
+    } else {
+        color << "Unknown";
+    }
+    std::cout << "Color" << qualifier << ": " << color.str() << '\n';
 }
 
 void change_power(const std::string& device_selector, bool enabled,
@@ -130,7 +194,12 @@ int main(int argc, char** argv) {
     try {
         switch (options.command) {
         case Command::devices:
-            show_devices(api_key);
+            if (!show_devices(api_key)) {
+                return 1;
+            }
+            break;
+        case Command::status:
+            show_status(options.device, api_key);
             break;
         case Command::power_on:
             change_power(options.device, true, api_key);
