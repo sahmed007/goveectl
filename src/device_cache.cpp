@@ -1,4 +1,6 @@
 #include "govee.hpp"
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -8,19 +10,44 @@
 namespace govee {
 
 namespace {
-constexpr char cache_filename[] = "devices.json";
+std::filesystem::path cache_path() {
+    const char* base_dir = nullptr;
+    std::filesystem::path suffix;
+#if defined(_WIN32)
+    base_dir = std::getenv("LOCALAPPDATA");
+#elif defined(__APPLE__)
+    base_dir = std::getenv("HOME");
+    suffix = std::filesystem::path{"Library"} / "Caches";
+#else
+    const char* xdg_cache = std::getenv("XDG_CACHE_HOME");
+    if (xdg_cache != nullptr && xdg_cache[0] != '\0' &&
+        std::filesystem::path{xdg_cache}.is_absolute()) {
+        return std::filesystem::path{xdg_cache} / "goveectl" / "devices.json";
+    }
+    base_dir = std::getenv("HOME");
+    suffix = ".cache";
+#endif
+    if (base_dir == nullptr || base_dir[0] == '\0' ||
+        !std::filesystem::path{base_dir}.is_absolute()) {
+        throw std::runtime_error(
+            "Could not determine an absolute user cache directory");
+    }
+    return std::filesystem::path{base_dir} / suffix / "goveectl" / "devices.json";
+}
 } // namespace
 
 void save_devices_cache(const std::vector<Device>& devices) {
     auto entries = nlohmann::json::array();
     for (const auto& device : devices) {
-        auto entry = nlohmann::json::object(
-            {{"device", device.id}, {"sku", device.sku},
-             {"deviceName", device.name}});
+        auto entry = nlohmann::json::object({{"device", device.id},
+                                             {"sku", device.sku},
+                                             {"deviceName", device.name}});
         entries.push_back(entry);
     }
 
-    std::ofstream cache_file(cache_filename);
+    const auto path = cache_path();
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream cache_file(path);
     if (!cache_file.is_open()) {
         throw std::runtime_error(
             "Error: Could not create or open device cache file");
@@ -35,7 +62,7 @@ void save_devices_cache(const std::vector<Device>& devices) {
 }
 
 std::vector<Device> load_devices_cache() {
-    std::ifstream cache_file(cache_filename);
+    std::ifstream cache_file(cache_path());
     if (!cache_file.is_open()) {
         throw std::runtime_error("Error: Could not load device cache file. Try "
                                  "running 'goveectl devices' first");
