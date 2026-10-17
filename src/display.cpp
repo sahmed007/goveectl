@@ -68,7 +68,8 @@ void print_devices(const std::vector<DeviceRow>& devices) {
     std::cout << rows.str();
 }
 
-void print_status(const govee::Device& device, const govee::DeviceState& state) {
+void print_status(const govee::Device& device,
+                  const govee::DeviceState& state) {
     std::cout << "Name: " << (device.name.empty() ? "(unnamed)" : device.name)
               << "\nModel: " << device.sku << "\nDevice ID: " << device.id
               << "\nStatus: " << online_text(state.online) << '\n';
@@ -88,6 +89,11 @@ void print_status(const govee::Device& device, const govee::DeviceState& state) 
         color << "Unknown";
     }
     std::cout << "Color" << qualifier << ": " << color.str() << '\n';
+    std::cout << "Temperature" << qualifier << ": "
+              << (state.temperature_kelvin
+                      ? std::to_string(*state.temperature_kelvin) + " K"
+                      : "Unknown")
+              << '\n';
 }
 
 } // namespace display

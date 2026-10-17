@@ -2,6 +2,7 @@
 #include "device_json.hpp" // IWYU pragma: keep
 #include "uuid.h"
 #include <cpr/cpr.h>
+#include <limits>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -77,6 +78,11 @@ DeviceState parse_device_state(const nlohmann::json& body) {
                    instance == "colorRgb" && value.is_number_integer() &&
                    value >= 0 && value <= 16777215) {
             state.color_rgb = value.get<int>();
+        } else if (type == "devices.capabilities.color_setting" &&
+                   instance == "colorTemperatureK" &&
+                   value.is_number_integer() && value > 0 &&
+                   value <= std::numeric_limits<int>::max()) {
+            state.temperature_kelvin = value.get<int>();
         }
     }
 
@@ -163,7 +169,8 @@ void set_color(const Device& device, int red, int green, int blue,
 void set_temperature(const Device& device, int kelvin,
                      const std::string& api_key) {
     if (kelvin <= 0) {
-        throw std::invalid_argument("Color temperature must be positive Kelvin");
+        throw std::invalid_argument(
+            "Color temperature must be positive Kelvin");
     }
     const nlohmann::json capability = {
         {"type", "devices.capabilities.color_setting"},

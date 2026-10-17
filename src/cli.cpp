@@ -1,7 +1,7 @@
 #include "cli.hpp"
 #include "terminal.hpp"
-#include <charconv>
 #include <cctype>
+#include <charconv>
 #include <memory>
 #include <sstream>
 #include <string_view>
@@ -11,11 +11,15 @@ constexpr inline std::string_view GOVEECTL_VERSION = "0.1";
 namespace {
 int parse_temperature(std::string text) {
     for (char& character : text) {
-        character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
+        character = static_cast<char>(
+            std::tolower(static_cast<unsigned char>(character)));
     }
-    if (text == "warm") return 2700;
-    if (text == "neutral") return 4000;
-    if (text == "cool") return 6500;
+    if (text == "warm")
+        return 2700;
+    if (text == "neutral")
+        return 4000;
+    if (text == "cool")
+        return 6500;
 
     int kelvin = 0;
     const auto result =
@@ -23,7 +27,8 @@ int parse_temperature(std::string text) {
     if (result.ec != std::errc{} || result.ptr != text.data() + text.size() ||
         kelvin <= 0) {
         throw CLI::ValidationError(
-            "temperature", "Use warm, neutral, cool, or a positive integer in Kelvin");
+            "temperature",
+            "Use warm, neutral, cool, or a positive integer in Kelvin");
     }
     return kelvin;
 }
@@ -163,7 +168,7 @@ Any failed state query causes a nonzero exit code.)");
 
     CLI::App* status_subcommand = app.add_subcommand(
         "status",
-        "Query a device's connectivity, power, brightness, and color");
+        "Query connectivity, power, brightness, color, and temperature");
     status_subcommand
         ->add_option("-d,--device", options.device,
                      "Target device ID or exact name (case-sensitive)")
@@ -251,11 +256,12 @@ Use a device ID if a name matches multiple devices.)");
     off_subcommand->callback(
         [&options] { options.command = Command::power_off; });
 
-    CLI::App* temperature_subcommand =
-        app.add_subcommand("temperature", "Set white color temperature in Kelvin");
+    CLI::App* temperature_subcommand = app.add_subcommand(
+        "temperature", "Set white color temperature in Kelvin");
     temperature_subcommand
-        ->add_option("value", options.temperature_input,
-                     "warm (2700 K), neutral (4000 K), cool (6500 K), or Kelvin")
+        ->add_option(
+            "value", options.temperature_input,
+            "warm (2700 K), neutral (4000 K), cool (6500 K), or Kelvin")
         ->required();
     temperature_subcommand
         ->add_option("-d,--device", options.device,

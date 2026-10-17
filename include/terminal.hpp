@@ -9,8 +9,8 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <windows.h>
 #include <io.h>
+#include <windows.h>
 #else
 #include <unistd.h>
 #endif
@@ -47,9 +47,7 @@ inline std::string style(std::string_view text, std::string_view code,
     return "\033[" + std::string{code} + "m" + std::string{text} + "\033[0m";
 }
 
-inline std::string success(std::string_view text) {
-    return style(text, "32");
-}
+inline std::string success(std::string_view text) { return style(text, "32"); }
 
 inline std::string error(std::string_view text) {
     return style(text, "31", stderr);

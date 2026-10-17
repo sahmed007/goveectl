@@ -16,6 +16,7 @@ struct DeviceState {
     std::optional<bool> power;
     std::optional<int> brightness;
     std::optional<int> color_rgb;
+    std::optional<int> temperature_kelvin;
 };
 
 std::vector<Device> list_devices(const std::string& api_key);
