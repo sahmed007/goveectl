@@ -1,11 +1,10 @@
 #include "commands.hpp"
 #include "display.hpp"
 #include "govee.hpp"
+#include "govee_internal.hpp"
 #include "terminal.hpp"
-#include <algorithm>
 #include <exception>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -13,29 +12,7 @@ namespace commands {
 namespace {
 govee::Device find_device(const std::string& device_selector) {
     const auto devices = govee::load_devices_cache();
-    auto it = std::ranges::find(devices, device_selector, &govee::Device::id);
-    if (it == devices.end() && !device_selector.empty()) {
-        for (auto candidate = devices.begin(); candidate != devices.end();
-             ++candidate) {
-            if (candidate->name != device_selector) {
-                continue;
-            }
-            if (it != devices.end()) {
-                throw std::runtime_error(
-                    "Multiple devices named '" + device_selector +
-                    "'. Use a device ID from 'goveectl devices'.");
-            }
-            it = candidate;
-        }
-    }
-
-    if (it == devices.end()) {
-        throw std::runtime_error(
-            "Device name or ID not found in cache (names are case-sensitive). "
-            "Run 'goveectl devices' to refresh.");
-    }
-
-    return *it;
+    return govee::detail::find_device(devices, device_selector);
 }
 
 } // namespace

@@ -48,6 +48,8 @@ add_executable(goveectl
     src/commands.cpp
     src/display.cpp
     src/govee.cpp
+    src/govee_parsing.cpp
+    src/device_selection.cpp
     src/device_cache.cpp
     src/cli.cpp
 )
@@ -81,4 +83,49 @@ else()
         -Wpedantic
         -Werror
     )
+endif()
+
+# Tests have their own main() and compile only offline application code.
+include(CTest)
+if(BUILD_TESTING)
+    FetchContent_Declare(
+        doctest
+        GIT_REPOSITORY https://github.com/doctest/doctest.git
+        GIT_TAG v2.4.11
+        GIT_SHALLOW TRUE
+    )
+    # doctest 2.4.11 declares an old minimum; CMake 4 needs this policy floor.
+    # Function scope keeps the compatibility setting local to this dependency.
+    function(make_doctest_available)
+        set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+        FetchContent_MakeAvailable(doctest)
+    endfunction()
+    make_doctest_available()
+
+    add_executable(goveectl_tests
+        tests/main.cpp
+        tests/cli_test.cpp
+        tests/govee_parsing_test.cpp
+        tests/device_selection_test.cpp
+        tests/device_cache_test.cpp
+        tests/display_test.cpp
+        src/govee_parsing.cpp
+        src/device_selection.cpp
+        src/device_cache.cpp
+        src/display.cpp
+        src/cli.cpp
+    )
+    target_include_directories(goveectl_tests PRIVATE include)
+    target_include_directories(goveectl_tests SYSTEM PRIVATE external)
+    # Keep third-party implementation warnings out of clangd's -Werror checks.
+    target_include_directories(goveectl_tests SYSTEM PRIVATE
+        $<TARGET_PROPERTY:doctest::doctest,INTERFACE_INCLUDE_DIRECTORIES>
+    )
+    target_link_libraries(goveectl_tests PRIVATE doctest::doctest nlohmann_json::nlohmann_json)
+    if(MSVC)
+        target_compile_options(goveectl_tests PRIVATE /W4 /WX)
+    else()
+        target_compile_options(goveectl_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+    add_test(NAME goveectl_cli COMMAND goveectl_tests)
 endif()
