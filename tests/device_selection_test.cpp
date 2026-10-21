@@ -11,11 +11,10 @@ TEST_CASE("devices resolve by exact ID or case sensitive name") {
     CHECK(find_device(devices, "Shelf").id == "id-2");
     for (const char* selector : {"desk lamp", "Desk", "missing", ""}) {
         CAPTURE(selector);
-        CHECK_THROWS_WITH_AS(
-            find_device(devices, selector),
-            "Device name or ID not found in cache (names are case-sensitive). "
-            "Run 'goveectl devices' to refresh.",
-            std::runtime_error);
+        CHECK_THROWS_WITH_AS(find_device(devices, selector),
+                             "Device name or ID not found in cache (names are case-sensitive). "
+                             "Run 'goveectl devices' to refresh.",
+                             std::runtime_error);
     }
     CHECK_THROWS_AS(find_device({}, "id-1"), std::runtime_error);
     CHECK_THROWS_AS(find_device({{"H1", "id-1", ""}}, ""), std::runtime_error);

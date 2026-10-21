@@ -6,9 +6,7 @@
 namespace govee {
 
 inline void to_json(nlohmann::json& json, const Device& device) {
-    json = {{"sku", device.sku},
-            {"device", device.id},
-            {"deviceName", device.name}};
+    json = {{"sku", device.sku}, {"device", device.id}, {"deviceName", device.name}};
 }
 
 inline void from_json(const nlohmann::json& json, Device& device) {

@@ -39,8 +39,7 @@ inline bool supports_color(FILE* stream) {
 #endif
 }
 
-inline std::string style(std::string_view text, std::string_view code,
-                         FILE* stream = stdout) {
+inline std::string style(std::string_view text, std::string_view code, FILE* stream = stdout) {
     if (text.empty() || !supports_color(stream)) {
         return std::string{text};
     }
@@ -49,8 +48,6 @@ inline std::string style(std::string_view text, std::string_view code,
 
 inline std::string success(std::string_view text) { return style(text, "32"); }
 
-inline std::string error(std::string_view text) {
-    return style(text, "31", stderr);
-}
+inline std::string error(std::string_view text) { return style(text, "31", stderr); }
 
 } // namespace terminal

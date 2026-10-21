@@ -12,8 +12,7 @@ struct CacheFixture {
     std::filesystem::path file = directory.path / "goveectl/devices.json";
 #elif defined(__APPLE__)
     test::Environment base{"HOME", directory.path.string()};
-    std::filesystem::path file =
-        directory.path / "Library/Caches/goveectl/devices.json";
+    std::filesystem::path file = directory.path / "Library/Caches/goveectl/devices.json";
 #else
     test::Environment base{"HOME", directory.path.string()};
     test::Environment xdg{"XDG_CACHE_HOME", directory.path.string()};
@@ -30,11 +29,9 @@ struct CacheFixture {
 };
 } // namespace
 
-TEST_CASE_FIXTURE(CacheFixture,
-                  "cache creates directories and round trips device fields") {
+TEST_CASE_FIXTURE(CacheFixture, "cache creates directories and round trips device fields") {
     CHECK_FALSE(std::filesystem::exists(file.parent_path()));
-    govee::save_devices_cache(
-        {{"H1", "id-1", "Desk \"Lamp\""}, {"H2", "id-2", ""}});
+    govee::save_devices_cache({{"H1", "id-1", "Desk \"Lamp\""}, {"H2", "id-2", ""}});
     CHECK(std::filesystem::is_regular_file(file));
     const auto devices = govee::load_devices_cache();
     REQUIRE(devices.size() == 2);
@@ -54,32 +51,26 @@ TEST_CASE_FIXTURE(CacheFixture, "missing cache explains how to initialize it") {
                       "'goveectl devices' first");
 }
 
-TEST_CASE_FIXTURE(CacheFixture,
-                  "cache rejects corrupt JSON and invalid device records") {
+TEST_CASE_FIXTURE(CacheFixture, "cache rejects corrupt JSON and invalid device records") {
     SUBCASE("malformed JSON") {
         write("[");
-        CHECK_THROWS_AS(govee::load_devices_cache(),
-                        nlohmann::json::parse_error);
+        CHECK_THROWS_AS(govee::load_devices_cache(), nlohmann::json::parse_error);
     }
     SUBCASE("non-array") {
         write("{}");
-        CHECK_THROWS_WITH(govee::load_devices_cache(),
-                          "Expected a device array");
+        CHECK_THROWS_WITH(govee::load_devices_cache(), "Expected a device array");
     }
     SUBCASE("missing SKU") {
         write(R"([{"device":"id-1"}])");
-        CHECK_THROWS_AS(govee::load_devices_cache(),
-                        nlohmann::json::out_of_range);
+        CHECK_THROWS_AS(govee::load_devices_cache(), nlohmann::json::out_of_range);
     }
     SUBCASE("missing device ID") {
         write(R"([{"sku":"H1"}])");
-        CHECK_THROWS_AS(govee::load_devices_cache(),
-                        nlohmann::json::out_of_range);
+        CHECK_THROWS_AS(govee::load_devices_cache(), nlohmann::json::out_of_range);
     }
     SUBCASE("incorrect field type") {
         write(R"([{"sku":"H1","device":42}])");
-        CHECK_THROWS_AS(govee::load_devices_cache(),
-                        nlohmann::json::type_error);
+        CHECK_THROWS_AS(govee::load_devices_cache(), nlohmann::json::type_error);
     }
 }
 

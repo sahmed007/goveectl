@@ -45,16 +45,14 @@ int main(int argc, char** argv) {
             commands::change_power(options.device, false, api_key);
             break;
         case Command::brightness:
-            commands::change_brightness(options.device, options.brightness,
-                                        api_key);
+            commands::change_brightness(options.device, options.brightness, api_key);
             break;
         case Command::color:
-            commands::change_color(options.device, options.red, options.green,
-                                   options.blue, api_key);
+            commands::change_color(options.device, options.red, options.green, options.blue,
+                                   api_key);
             break;
         case Command::temperature:
-            commands::change_temperature(options.device, options.kelvin,
-                                         api_key);
+            commands::change_temperature(options.device, options.kelvin, api_key);
             break;
         case Command::none:
             std::cerr << terminal::error("No command selected") << '\n';

@@ -37,8 +37,7 @@ TEST_CASE("brightness accepts the inclusive percentage boundaries") {
         Options options;
         CLI::App app;
         configure_cli(app, options);
-        const char* argv[] = {"goveectl", "brightness", value, "-d",
-                              "Desk Lamp"};
+        const char* argv[] = {"goveectl", "brightness", value, "-d", "Desk Lamp"};
 
         app.parse(5, argv);
 
@@ -73,8 +72,7 @@ TEST_CASE("hex and RGB forms produce the same orange color") {
         app.parse(5, argv);
     }
     SUBCASE("RGB channels") {
-        const char* argv[] = {"goveectl", "color", "255", "128",
-                              "0",        "-d",    "lamp"};
+        const char* argv[] = {"goveectl", "color", "255", "128", "0", "-d", "lamp"};
         app.parse(7, argv);
     }
 
@@ -91,8 +89,7 @@ TEST_CASE("each RGB channel accepts zero and 255") {
         Options options;
         CLI::App app;
         configure_cli(app, options);
-        const char* argv[] = {"goveectl", "color", value, value,
-                              value,      "-d",    "lamp"};
+        const char* argv[] = {"goveectl", "color", value, value, value, "-d", "lamp"};
         app.parse(7, argv);
         CHECK(options.red == std::stoi(value));
         CHECK(options.green == std::stoi(value));
@@ -119,8 +116,7 @@ TEST_CASE("invalid RGB channels are rejected in every position") {
             Options options;
             CLI::App app;
             configure_cli(app, options);
-            const char* argv[] = {"goveectl", "color", "0",   "0",
-                                  "0",        "-d",    "lamp"};
+            const char* argv[] = {"goveectl", "color", "0", "0", "0", "-d", "lamp"};
             argv[channel] = value;
             CHECK_THROWS_AS(app.parse(7, argv), CLI::ValidationError);
         }
@@ -140,16 +136,15 @@ TEST_CASE("temperature accepts presets and numeric Kelvin") {
         const char* input;
         int kelvin;
     };
-    for (const auto& example : {Example{"warm", 2700}, Example{"neutral", 4000},
-                                Example{"cool", 6500}, Example{"WaRm", 2700},
-                                Example{"NEUTRAL", 4000}, Example{"COOL", 6500},
-                                Example{"3500", 3500}}) {
+    for (const auto& example :
+         {Example{"warm", 2700}, Example{"neutral", 4000}, Example{"cool", 6500},
+          Example{"WaRm", 2700}, Example{"NEUTRAL", 4000}, Example{"COOL", 6500},
+          Example{"3500", 3500}}) {
         CAPTURE(example.input);
         Options options;
         CLI::App app;
         configure_cli(app, options);
-        const char* argv[] = {"goveectl", "temperature", example.input, "-d",
-                              "lamp"};
+        const char* argv[] = {"goveectl", "temperature", example.input, "-d", "lamp"};
         app.parse(5, argv);
         CHECK(options.command == Command::temperature);
         CHECK(options.kelvin == example.kelvin);
@@ -169,8 +164,7 @@ TEST_CASE("temperature rejects invalid Kelvin and unknown presets") {
 }
 
 TEST_CASE("control and status commands require a device") {
-    for (const char* command :
-         {"status", "brightness", "color", "temperature", "power"}) {
+    for (const char* command : {"status", "brightness", "color", "temperature", "power"}) {
         CAPTURE(command);
         Options options;
         CLI::App app;
@@ -182,8 +176,7 @@ TEST_CASE("control and status commands require a device") {
         else if (name == "color")
             value = "FF8000";
         const char* argv[] = {"goveectl", command, value};
-        CHECK_THROWS_AS(app.parse(name == "status" ? 2 : 3, argv),
-                        CLI::RequiredError);
+        CHECK_THROWS_AS(app.parse(name == "status" ? 2 : 3, argv), CLI::RequiredError);
     }
     Options options;
     CLI::App app;
@@ -253,8 +246,7 @@ TEST_CASE("numeric overflow is rejected before any command runs") {
     Options options;
     CLI::App app;
     configure_cli(app, options);
-    const char* argv[] = {
-        "goveectl", "color", "999999999999999999999", "0", "0", "-d", "lamp"};
+    const char* argv[] = {"goveectl", "color", "999999999999999999999", "0", "0", "-d", "lamp"};
     CHECK_THROWS_AS(app.parse(7, argv), CLI::ValidationError);
 }
 
@@ -267,13 +259,11 @@ TEST_CASE("unexpected positional arguments are rejected") {
         CHECK_THROWS_AS(app.parse(3, argv), CLI::ExtrasError);
     }
     SUBCASE("brightness accepts one value") {
-        const char* argv[] = {"goveectl", "brightness", "50",
-                              "60",       "-d",         "lamp"};
+        const char* argv[] = {"goveectl", "brightness", "50", "60", "-d", "lamp"};
         CHECK_THROWS_AS(app.parse(6, argv), CLI::ExtrasError);
     }
     SUBCASE("color accepts at most three values") {
-        const char* argv[] = {"goveectl", "color", "1",  "2",
-                              "3",        "4",     "-d", "lamp"};
+        const char* argv[] = {"goveectl", "color", "1", "2", "3", "4", "-d", "lamp"};
         CHECK_THROWS_AS(app.parse(8, argv), CLI::ParseError);
     }
 }

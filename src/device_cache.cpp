@@ -29,11 +29,9 @@ std::filesystem::path cache_path() {
 #endif
     if (base_dir == nullptr || base_dir[0] == '\0' ||
         !std::filesystem::path{base_dir}.is_absolute()) {
-        throw std::runtime_error(
-            "Could not determine an absolute user cache directory");
+        throw std::runtime_error("Could not determine an absolute user cache directory");
     }
-    return std::filesystem::path{base_dir} / suffix / "goveectl" /
-           "devices.json";
+    return std::filesystem::path{base_dir} / suffix / "goveectl" / "devices.json";
 }
 } // namespace
 
@@ -44,8 +42,7 @@ void save_devices_cache(const std::vector<Device>& devices) {
     std::filesystem::create_directories(path.parent_path());
     std::ofstream cache_file(path);
     if (!cache_file.is_open()) {
-        throw std::runtime_error(
-            "Error: Could not create or open device cache file");
+        throw std::runtime_error("Error: Could not create or open device cache file");
     }
 
     cache_file << entries.dump(2);

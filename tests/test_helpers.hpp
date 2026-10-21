@@ -17,15 +17,13 @@ class Environment {
 #ifdef _WIN32
         if (_putenv_s(name.c_str(), value ? value : "") != 0)
 #else
-        if ((value ? setenv(name.c_str(), value, 1) : unsetenv(name.c_str())) !=
-            0)
+        if ((value ? setenv(name.c_str(), value, 1) : unsetenv(name.c_str())) != 0)
 #endif
             throw std::runtime_error("Could not set test environment");
     }
 
   public:
-    Environment(std::string name, const std::string& value)
-        : name_(std::move(name)) {
+    Environment(std::string name, const std::string& value) : name_(std::move(name)) {
         if (const char* old = std::getenv(name_.c_str()))
             previous_ = old;
         set(name_, value.c_str());

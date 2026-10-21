@@ -29,8 +29,8 @@ bool show_devices(const char* api_key) {
         } catch (const std::exception& error) {
             row.failed = true;
             success = false;
-            std::cerr << terminal::error("State query failed for " + device.id +
-                                         ": " + error.what())
+            std::cerr << terminal::error("State query failed for " + device.id + ": " +
+                                         error.what())
                       << '\n';
         }
         rows.push_back(row);
@@ -45,39 +45,34 @@ void show_status(const std::string& device_selector, const char* api_key) {
     display::print_status(device, state);
 }
 
-void change_power(const std::string& device_selector, bool enabled,
-                  const char* api_key) {
+void change_power(const std::string& device_selector, bool enabled, const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_power(device, enabled, api_key);
-    std::cout << terminal::success("Success: ") << "Power "
-              << (enabled ? "on" : "off") << " request succeeded for "
-              << (device.name.empty() ? device.id : device.name) << '\n';
+    std::cout << terminal::success("Success: ") << "Power " << (enabled ? "on" : "off")
+              << " request succeeded for " << (device.name.empty() ? device.id : device.name)
+              << '\n';
 }
 
-void change_brightness(const std::string& device_selector, int value,
-                       const char* api_key) {
+void change_brightness(const std::string& device_selector, int value, const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_brightness(device, value, api_key);
-    std::cout << terminal::success("Success: ") << "Changed brightness of "
-              << device.name << " to " << value << '\n';
+    std::cout << terminal::success("Success: ") << "Changed brightness of " << device.name << " to "
+              << value << '\n';
 }
 
-void change_color(const std::string& device_selector, int red, int green,
-                  int blue, const char* api_key) {
+void change_color(const std::string& device_selector, int red, int green, int blue,
+                  const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_color(device, red, green, blue, api_key);
-    std::cout << terminal::success("Success: ") << "Changed color to RGB("
-              << red << ", " << green << ", " << blue << ")\n";
+    std::cout << terminal::success("Success: ") << "Changed color to RGB(" << red << ", " << green
+              << ", " << blue << ")\n";
 }
 
-void change_temperature(const std::string& device_selector, int kelvin,
-                        const char* api_key) {
+void change_temperature(const std::string& device_selector, int kelvin, const char* api_key) {
     const auto device = find_device(device_selector);
     govee::set_temperature(device, kelvin, api_key);
-    std::cout << terminal::success("Success: ")
-              << "Temperature request succeeded for "
-              << (device.name.empty() ? device.id : device.name) << ": "
-              << kelvin << " K\n";
+    std::cout << terminal::success("Success: ") << "Temperature request succeeded for "
+              << (device.name.empty() ? device.id : device.name) << ": " << kelvin << " K\n";
 }
 
 } // namespace commands

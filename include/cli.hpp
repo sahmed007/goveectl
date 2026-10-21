@@ -4,16 +4,7 @@
 #include <string>
 #include <vector>
 
-enum class Command {
-    none,
-    devices,
-    status,
-    power_on,
-    power_off,
-    brightness,
-    color,
-    temperature
-};
+enum class Command { none, devices, status, power_on, power_off, brightness, color, temperature };
 
 struct Options {
     Command command = Command::none;
